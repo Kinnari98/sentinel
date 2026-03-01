@@ -1,4 +1,4 @@
-id: a0e6830f-3b5f-4217-b427-e9c8cbefc2de
+id: 81160757-4235-46db-8ff3-7a2bc1c98413
 name: Port scanning detected on Linux server (OG)
 description: |-
   This rule detects possible malicious port scanning that occurs towards a Linux server.
