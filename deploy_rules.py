@@ -42,6 +42,33 @@ def to_iso8601(duration: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Korjaa incidentConfiguration lookbackDuration ISO 8601 -muotoon
+# ---------------------------------------------------------------------------
+def fix_incident_config(incident_cfg: dict) -> dict:
+    default = {
+        "createIncident": True,
+        "groupingConfiguration": {
+            "enabled": False,
+            "reopenClosedIncident": False,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+        }
+    }
+    if not incident_cfg:
+        return default
+    result = dict(incident_cfg)
+    if "groupingConfiguration" in result:
+        gc = dict(result["groupingConfiguration"])
+        if "lookbackDuration" in gc:
+            gc["lookbackDuration"] = to_iso8601(str(gc["lookbackDuration"]))
+        result["groupingConfiguration"] = gc
+    return result
+
+
+# ---------------------------------------------------------------------------
 # YAML → ARM-properties muunnos
 # ---------------------------------------------------------------------------
 def yaml_to_arm_properties(rule: dict) -> dict:
@@ -60,18 +87,7 @@ def yaml_to_arm_properties(rule: dict) -> dict:
         "tactics":    rule.get("tactics", []),
         "techniques": rule.get("relevantTechniques", []),
         "eventGroupingSettings": {"aggregationKind": "SingleAlert"},
-        "incidentConfiguration": rule.get("incidentConfiguration", {
-            "createIncident": True,
-            "groupingConfiguration": {
-                "enabled": False,
-                "reopenClosedIncident": False,
-                "lookbackDuration": "PT5H",
-                "matchingMethod": "AllEntities",
-                "groupByEntities": [],
-                "groupByAlertDetails": [],
-                "groupByCustomDetails": []
-            }
-        }),
+        "incidentConfiguration": fix_incident_config(rule.get("incidentConfiguration", {})),
     }
 
     if rule.get("entityMappings"):
