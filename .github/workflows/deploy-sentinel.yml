@@ -5,9 +5,9 @@ on:
     branches:
       - main
     paths:
-      - 'analytic-rules/**'   # Triggeröityy vain kun tässä kansiossa tapahtuu muutoksia
+      - 'analytic-rules/**' # Triggeröityy vain kun tässä kansiossa tapahtuu muutoksia
 
-  workflow_dispatch:           # Mahdollistaa myös manuaalisen ajon GitHubista
+  workflow_dispatch: # Mahdollistaa myös manuaalisen ajon GitHubista
 
 jobs:
   deploy:
