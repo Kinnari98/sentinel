@@ -1,0 +1,50 @@
+#  Left out enabled: false 
+id: 0dd85955-5b8e-45cf-8e20-dee38431fcc1
+name: Port scan detected on Linux server
+description: |-
+  #INC_CORR#
+  This rule detects nmap scans initiated towards a Linux server.
+  Logic lies behind UFW BLOCK
+severity: Medium
+status: Available
+kind: Scheduled
+queryFrequency: 5m
+queryPeriod: 5m
+triggerOperator: GreaterThan
+triggerThreshold: 0
+query: |-
+  Syslog
+  | where ProcessName == "kernel"
+  | where SyslogMessage contains "[UFW BLOCK]"
+  | parse SyslogMessage with * "SRC=" SrcIP " DST=" DstIP " LEN=" * "PROTO=" Protocol " " *
+  | parse SyslogMessage with * "DPT=" DstPort " " *
+  | summarize DistinctPorts=dcount(DstPort), AttemptCount=count()
+      by SrcIP, DstIP, Computer, Type, bin(TimeGenerated, 5m)
+  | where DistinctPorts >= 10 or AttemptCount >= 20
+  | sort by AttemptCount desc
+entityMappings:
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: SrcIP
+- entityType: Host
+  fieldMappings:
+  - identifier: FullName
+    columnName: Computer
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: DstIP
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: false
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+suppressionEnabled: false
+suppressionDuration: 5h
+version: 1.0.0
