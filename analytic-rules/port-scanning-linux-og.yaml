@@ -1,0 +1,61 @@
+id: a0e6830f-3b5f-4217-b427-e9c8cbefc2de
+name: Port scanning detected on Linux server (OG)
+description: |-
+  This rule detects possible malicious port scanning that occurs towards a Linux server.
+  Detection is based on Syslog and especially UFW logs, where attempts to connect to a port happened from the same IP address.
+severity: Low
+status: Available
+kind: Scheduled
+tactics:
+- InitialAccess
+- DefenseEvasion
+- Discovery
+- Reconnaissance
+queryFrequency: 1h
+queryPeriod: 1d
+triggerOperator: GreaterThan
+triggerThreshold: 0
+query: |-
+  Syslog
+  | where SyslogMessage contains "UFW"
+  | extend SrcIP = extract("SRC=([0-9\\.]+)", 1, SyslogMessage)
+  | extend DstPort = toint(extract("DPT=(\\d+)", 1, SyslogMessage))
+  | where isnotempty(SrcIP) and isnotempty(DstPort)
+  | summarize
+      Attempts = count(),
+      DistinctPorts = dcount(DstPort),
+      Ports = make_set(DstPort, 20)
+    by SrcIP, Computer, bin(TimeGenerated, 5m)
+  | where DistinctPorts >= 8
+  | order by Attempts desc
+entityMappings:
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: SrcIP
+- entityType: Host
+  fieldMappings:
+  - identifier: FullName
+    columnName: Computer
+alertDetailsOverride:
+  alertDisplayNameFormat: Port scan detected on {{Computer}} with {{Attempts}} individual ports scanned
+  alertDescriptionFormat: Port scanning that might indicate reconnaissance activities. This alert is to notify to take preemptive
+    actions.
+  alertDynamicProperties: []
+customDetails:
+  DistinctPorts: DistinctPorts
+  Ports: Ports
+  Attempts: Attempts
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: PT3H
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+suppressionEnabled: false
+suppressionDuration: PT5H
+version: 1.0.0
